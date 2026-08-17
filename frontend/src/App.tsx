@@ -2,6 +2,7 @@ import Layout from './components/ui/Layout'
 import Landing from './pages/Landing'
 import Dashboard from './pages/Dashboard'
 import Login from './pages/Login'
+import KitchenSink from './pages/KitchenSink'
 import { Routes, Route } from 'react-router'
 
 export default function App() {
@@ -12,6 +13,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="*" element={<h1>404 - Not Found</h1>} />
+        <Route path="/kitchensink" element={<KitchenSink />} />
       </Route>
     </Routes>
   )
