@@ -1,9 +1,18 @@
-function App() {
+import Layout from './components/ui/Layout'
+import Landing from './pages/Landing'
+import Dashboard from './pages/Dashboard'
+import Login from './pages/Login'
+import { Routes, Route } from 'react-router'
+
+export default function App() {
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-      <h1 className="text-4xl font-bold text-white">AI Interview Simulator</h1>
-    </div>
+    <Routes>
+      <Route element={<Layout />}>
+        <Route path="/" element={<Landing />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="*" element={<h1>404 - Not Found</h1>} />
+      </Route>
+    </Routes>
   )
 }
-
-export default App
