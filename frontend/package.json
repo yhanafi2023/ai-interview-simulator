@@ -3,13 +3,19 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "overrides": {
+    "openapi-typescript": {
+      "typescript": "$typescript"
+    }
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "gen:api": "openapi-typescript ../openapi.yaml -o src/types/api.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
@@ -30,9 +36,16 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.3",
     "globals": "^17.7.0",
+    "msw": "^2.15.0",
+    "openapi-typescript": "^7.13.0",
     "prettier": "^3.9.6",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.65.0",
     "vite": "^8.2.0"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
   }
 }

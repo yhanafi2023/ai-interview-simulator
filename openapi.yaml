@@ -1,0 +1,163 @@
+openapi: 3.1.0
+
+info:
+  title: AI Interview Simulator API
+  version: 0.1.0
+
+paths:
+  /auth/me:
+    get:
+      summary: Get the currently logged-in user
+      operationId: getCurrentUser
+      responses:
+        '200':
+          description: The current user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+  /auth/login:
+    post:
+      summary: Exchange credentials for an access token
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid email or password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /auth/register:
+    post:
+      summary: Create a new account
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '409':
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /questions:
+    get:
+      summary: List interview questions
+      operationId: listQuestions
+      parameters:
+        - name: type
+          in: query
+          schema:
+            $ref: '#/components/schemas/InterviewType'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: A list of questions
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, total]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Question'
+                  total:
+                    type: integer
+
+components:
+  schemas:
+    User:
+      type: object
+      required: [id, email, displayName]
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        displayName:
+          type: string
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      required: [accessToken, user]
+      properties:
+        accessToken:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+
+    ApiError:
+      type: object
+      required: [detail]
+      properties:
+        detail:
+          type: string
+    RegisterRequest:
+      type: object
+      required: [email, password, displayName]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+          minLength: 8
+        displayName:
+          type: string
+
+    InterviewType:
+      type: string
+      enum: [technical, behavioral, system_design]
+
+    Difficulty:
+      type: string
+      enum: [easy, medium, hard]
+
+    Question:
+      type: object
+      required: [id, type, difficulty, prompt]
+      properties:
+        id:
+          type: string
+        type:
+          $ref: '#/components/schemas/InterviewType'
+        difficulty:
+          $ref: '#/components/schemas/Difficulty'
+        prompt:
+          type: string
