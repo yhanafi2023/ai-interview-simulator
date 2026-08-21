@@ -1,29 +1,23 @@
-import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import Badge from '../components/ui/Badge'
 import Card from '../components/ui/Card'
-import { API_BASE } from '../lib/config'
-import type { Question } from '../types'
+import { api } from '../lib/api'
+import type { QuestionListResponse } from '../types'
 
 export default function Dashboard() {
-  const [questions, setQuestions] = useState<Question[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    fetch(`${API_BASE}/questions`)
-      .then((res) => res.json())
-      .then((data) => setQuestions(data.items))
-      .finally(() => setLoading(false))
-  }, [])
-
+  const { data, isPending, isError, error } = useQuery({
+    queryKey: ['questions'],
+    queryFn: () => api.get<QuestionListResponse>('/questions'),
+  })
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">Dashboard</h1>
 
-      {loading ? (
-        <p className="text-slate-400">Loading questions…</p>
-      ) : (
+      {isPending && <p className="text-slate-400">Loading questions…</p>}
+      {isError && <p className="text-red-400">Couldn't load questions: {error.message}</p>}
+      {data && (
         <div className="grid gap-4">
-          {questions.map((q) => (
+          {data.items.map((q) => (
             <Card key={q.id}>
               <div className="mb-2 flex gap-2">
                 <Badge tone="info">{q.type}</Badge>
