@@ -1,7 +1,7 @@
 import { delay, http, HttpResponse } from 'msw'
 import { API_BASE } from '../lib/config'
 import { mockQuestions, mockUser } from './data'
-import type { ApiError, AuthResponse, LoginRequest } from '../types'
+import type { ApiError, AuthResponse, LoginRequest, RegisterRequest } from '../types'
 
 export const handlers = [
   http.get(`${API_BASE}/questions`, async ({ request }) => {
@@ -33,4 +33,28 @@ export const handlers = [
   ),
 
   http.get(`${API_BASE}/auth/me`, () => HttpResponse.json(mockUser)),
+  http.post<never, RegisterRequest, AuthResponse | ApiError>(
+    `${API_BASE}/auth/register`,
+    async ({ request }) => {
+      await delay(500)
+
+      const body = await request.json()
+
+      if (body.email === 'taken@example.com') {
+        return HttpResponse.json({ detail: 'Email already registered' }, { status: 409 })
+      }
+
+      return HttpResponse.json(
+        {
+          accessToken: 'mock-access-token',
+          user: {
+            id: `usr_${Date.now()}`,
+            email: body.email,
+            displayName: body.displayName,
+          },
+        },
+        { status: 201 },
+      )
+    },
+  ),
 ]
