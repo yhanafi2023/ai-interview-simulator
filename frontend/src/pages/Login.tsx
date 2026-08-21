@@ -9,6 +9,8 @@ import Card from '../components/ui/Card'
 import Input from '../components/ui/Input'
 import { ApiRequestError, api } from '../lib/api'
 import type { AuthResponse } from '../types'
+import { useLocation } from 'react-router'
+import { useAuth } from '../features/auth/auth-context'
 
 const loginSchema = z.object({
   email: z.email('Enter a valid email address'),
@@ -27,12 +29,14 @@ export default function Login() {
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
   })
-
+  const { signIn } = useAuth()
+  const location = useLocation()
+  const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname
   const mutation = useMutation({
     mutationFn: (values: LoginForm) => api.post<AuthResponse>('/auth/login', values),
     onSuccess: (data) => {
-      console.log('logged in as', data.user.email, 'token', data.accessToken)
-      navigate('/dashboard')
+      signIn(data.accessToken, data.user)
+      navigate(from ?? '/dashboard', { replace: true })
     },
   })
 

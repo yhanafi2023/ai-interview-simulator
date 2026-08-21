@@ -8,6 +8,7 @@ import Card from '../components/ui/Card'
 import Input from '../components/ui/Input'
 import { ApiRequestError, api } from '../lib/api'
 import type { AuthResponse } from '../types'
+import { useAuth } from '../features/auth/auth-context'
 
 const registerSchema = z
   .object({
@@ -33,6 +34,7 @@ export default function Register() {
   } = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
   })
+  const { signIn } = useAuth()
 
   const mutation = useMutation({
     mutationFn: (values: RegisterForm) =>
@@ -41,7 +43,10 @@ export default function Register() {
         password: values.password,
         displayName: values.displayName,
       }),
-    onSuccess: () => navigate('/dashboard'),
+    onSuccess: (data) => {
+      signIn(data.accessToken, data.user)
+      navigate('/dashboard', { replace: true })
+    },
   })
 
   return (
