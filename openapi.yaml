@@ -92,6 +92,71 @@ paths:
                       $ref: '#/components/schemas/Question'
                   total:
                     type: integer
+  /sessions:
+    post:
+      summary: Start a new interview session
+      operationId: createSession
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSessionRequest'
+      responses:
+        '201':
+          description: Session created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+
+  /sessions/{sessionId}:
+    get:
+      summary: Get one interview session
+      operationId: getSession
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /sessions/{sessionId}/answers:
+    post:
+      summary: Submit an answer and receive feedback
+      operationId: submitAnswer
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitAnswerRequest'
+      responses:
+        '201':
+          description: Feedback for the submitted answer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Feedback'
 
 components:
   schemas:
@@ -160,4 +225,89 @@ components:
         difficulty:
           $ref: '#/components/schemas/Difficulty'
         prompt:
+          type: string
+    SessionStatus:
+      type: string
+      enum: [in_progress, completed]
+
+    CreateSessionRequest:
+      type: object
+      required: [type, difficulty, questionCount]
+      properties:
+        type:
+          $ref: '#/components/schemas/InterviewType'
+        difficulty:
+          $ref: '#/components/schemas/Difficulty'
+        questionCount:
+          type: integer
+          minimum: 1
+          maximum: 10
+
+    Session:
+      type: object
+      required: [id, type, difficulty, status, createdAt, questions]
+      properties:
+        id:
+          type: string
+        type:
+          $ref: '#/components/schemas/InterviewType'
+        difficulty:
+          $ref: '#/components/schemas/Difficulty'
+        status:
+          $ref: '#/components/schemas/SessionStatus'
+        createdAt:
+          type: string
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Question'
+
+    SubmitAnswerRequest:
+      type: object
+      required: [questionId, content]
+      properties:
+        questionId:
+          type: string
+        content:
+          type: string
+          minLength: 1
+
+    ScoreDimension:
+      type: string
+      enum: [correctness, communication, depth, edge_cases]
+
+    Score:
+      type: object
+      required: [dimension, value, justification]
+      properties:
+        dimension:
+          $ref: '#/components/schemas/ScoreDimension'
+        value:
+          type: integer
+          minimum: 0
+          maximum: 10
+        justification:
+          type: string
+
+    Feedback:
+      type: object
+      required: [answerId, questionId, scores, strengths, improvements]
+      properties:
+        answerId:
+          type: string
+        questionId:
+          type: string
+        scores:
+          type: array
+          items:
+            $ref: '#/components/schemas/Score'
+        strengths:
+          type: array
+          items:
+            type: string
+        improvements:
+          type: array
+          items:
+            type: string
+        followUpQuestion:
           type: string

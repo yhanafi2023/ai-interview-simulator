@@ -72,6 +72,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start a new interview session */
+        post: operations["createSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sessions/{sessionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one interview session */
+        get: operations["getSession"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sessions/{sessionId}/answers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submit an answer and receive feedback */
+        post: operations["submitAnswer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -106,6 +157,40 @@ export interface components {
             type: components["schemas"]["InterviewType"];
             difficulty: components["schemas"]["Difficulty"];
             prompt: string;
+        };
+        /** @enum {string} */
+        SessionStatus: "in_progress" | "completed";
+        CreateSessionRequest: {
+            type: components["schemas"]["InterviewType"];
+            difficulty: components["schemas"]["Difficulty"];
+            questionCount: number;
+        };
+        Session: {
+            id: string;
+            type: components["schemas"]["InterviewType"];
+            difficulty: components["schemas"]["Difficulty"];
+            status: components["schemas"]["SessionStatus"];
+            createdAt: string;
+            questions: components["schemas"]["Question"][];
+        };
+        SubmitAnswerRequest: {
+            questionId: string;
+            content: string;
+        };
+        /** @enum {string} */
+        ScoreDimension: "correctness" | "communication" | "depth" | "edge_cases";
+        Score: {
+            dimension: components["schemas"]["ScoreDimension"];
+            value: number;
+            justification: string;
+        };
+        Feedback: {
+            answerId: string;
+            questionId: string;
+            scores: components["schemas"]["Score"][];
+            strengths: string[];
+            improvements: string[];
+            followUpQuestion?: string;
         };
     };
     responses: never;
@@ -224,6 +309,87 @@ export interface operations {
                         items: components["schemas"]["Question"][];
                         total: number;
                     };
+                };
+            };
+        };
+    };
+    createSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSessionRequest"];
+            };
+        };
+        responses: {
+            /** @description Session created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Session"];
+                };
+            };
+        };
+    };
+    getSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The session */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Session"];
+                };
+            };
+            /** @description Session not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    submitAnswer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmitAnswerRequest"];
+            };
+        };
+        responses: {
+            /** @description Feedback for the submitted answer */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Feedback"];
                 };
             };
         };

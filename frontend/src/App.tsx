@@ -6,6 +6,7 @@ import KitchenSink from './pages/KitchenSink'
 import Register from './pages/Register'
 import { Routes, Route } from 'react-router'
 import ProtectedRoute from './features/auth/ProtectedRoute'
+import InterviewRoom from './pages/InterviewRoom'
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/interview/:sessionId" element={<InterviewRoom />} />
         </Route>
         <Route path="*" element={<h1>404 - Not Found</h1>} />
         <Route path="/kitchensink" element={<KitchenSink />} />
