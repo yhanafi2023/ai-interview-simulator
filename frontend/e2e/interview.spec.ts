@@ -8,9 +8,11 @@ test('a user can answer a question and receive feedback', async ({ page }) => {
   await expect(page).toHaveURL(/\/dashboard/)
 
   await page.getByLabel('Type').selectOption('behavioral')
+  await page.getByLabel('Questions').selectOption('3')
   await page.getByRole('button', { name: 'Start interview' }).click()
 
   await expect(page).toHaveURL(/\/interview\//)
+  await expect(page.getByText('Question 1 of 3')).toBeVisible()
 
   await page
     .getByLabel('Your answer')
