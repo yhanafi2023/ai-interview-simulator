@@ -4,15 +4,14 @@
  */
 
 export interface paths {
-    "/auth/me": {
+    get: {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Get the currently logged-in user */
-        get: operations["getCurrentUser"];
+        get?: never;
         put?: never;
         post?: never;
         delete?: never;
@@ -205,26 +204,6 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    getCurrentUser: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The current user */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["User"];
-                };
-            };
-        };
-    };
     login: {
         parameters: {
             query?: never;
@@ -313,6 +292,15 @@ export interface operations {
                         items: components["schemas"]["Question"][];
                         total: number;
                     };
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };

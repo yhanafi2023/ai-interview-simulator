@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-
+from app.api.deps import CurrentUser
 from app.db.session import get_db
 from app.models import User
 from app.schemas.auth import AuthResponse, LoginRequest, RegisterRequest, UserOut
@@ -56,3 +56,6 @@ def login(
         access_token=create_access_token(str(user.id)),
         user=UserOut.model_validate(user),
     )
+@router.get("/me", response_model=UserOut)
+def me(user: CurrentUser) -> UserOut:
+    return UserOut.model_validate(user)

@@ -62,6 +62,8 @@ export const handlers = [
             id: `usr_${Date.now()}`,
             email: body.email,
             displayName: body.displayName,
+            role: 'user',
+            createdAt: new Date().toISOString(),
           },
         },
         { status: 201 },
