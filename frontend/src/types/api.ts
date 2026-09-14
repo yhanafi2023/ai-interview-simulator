@@ -131,6 +131,10 @@ export interface components {
             id: string;
             email: string;
             displayName: string;
+            /** @enum {string} */
+            role: "user" | "admin";
+            /** Format: date-time */
+            createdAt: unknown;
         };
         LoginRequest: {
             email: string;

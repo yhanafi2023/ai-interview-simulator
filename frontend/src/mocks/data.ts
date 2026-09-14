@@ -4,6 +4,8 @@ export const mockUser: User = {
   id: 'usr_1',
   email: 'jack@example.com',
   displayName: 'Jack',
+  role: 'user',
+  createdAt: '2026-01-15T12:00:00Z',
 }
 
 export const mockQuestions: Question[] = [

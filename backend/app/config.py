@@ -6,5 +6,8 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://interview:interview@localhost:5432/interview"
     redis_url: str = "redis://localhost:6379/0"
     cors_origins: list[str] = ["http://localhost:5173"]
+    jwt_secret: str = "dev-only-secret-change-in-production"
+    access_token_minutes: int = 15
+    refresh_token_days: int = 7
 
 settings = Settings()

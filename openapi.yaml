@@ -162,7 +162,7 @@ components:
   schemas:
     User:
       type: object
-      required: [id, email, displayName]
+      required: [id, email, displayName, role, createdAt]
       properties:
         id:
           type: string
@@ -170,6 +170,11 @@ components:
           type: string
         displayName:
           type: string
+        role:
+          type: string
+          enum: [user,admin]
+        createdAt:
+          format: date-time
     LoginRequest:
       type: object
       required: [email, password]
