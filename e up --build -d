@@ -1,0 +1,11 @@
+[33m9085c60[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeat/backend-skeleton[m[33m)[m feat(backend): add SQLAlchemy models, Alembic migrations, and readiness check
+[33mdbc492e[m feat(backend): add FastAPI skeleton with Docker Compose, Postgres, and Redis
+[33mabcf184[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m ci: testing and continuous integration (#5)
+[33mc95addf[m feat(interview): interview room with answer submission and AI feedback (#4)
+[33m252c3c8[m feat(auth): data layer, login/register, and protected routes (#3)
+[33m5f0c903[m feat(mocks): add MSW handlers backed by the API contract
+[33mb5c85f1[m feat(ui): add Card, Input, and Badge components
+[33me7eea01[m feat(ui): add cn helper and Button component with variants
+[33m282b3fa[m feat(frontend): add routing with layout, nav bar, and three pages
+[33m07b3deb[m chore(frontend): add Prettier with project formatting rules
+[33m05f5729[m chore: scaffold React frontend with Vite, TypeScript, and Tailwind
