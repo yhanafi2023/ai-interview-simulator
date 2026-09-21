@@ -12,7 +12,7 @@ export default defineConfig({
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
-    command: 'npm run dev',
+    command: 'VITE_USE_MOCKS=truenpm run dev',
     url: 'http://localhost:5173',
     reuseExistingServer: !process.env.CI,
   },

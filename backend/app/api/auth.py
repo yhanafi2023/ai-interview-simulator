@@ -44,6 +44,7 @@ def _issue_refresh_cookie(db : Session, response : Response, user : User, family
 @router.post("/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
 def register(
     body: RegisterRequest,
+    response : Response,
     db: Annotated[Session, Depends(get_db)],
 ) -> AuthResponse:
     existing = db.execute(select(User).where(User.email == body.email)).scalar_one_or_none()
@@ -73,6 +74,7 @@ def register(
 @router.post("/login", response_model=AuthResponse)
 def login(
     body: LoginRequest,
+    response : Response,
     db: Annotated[Session, Depends(get_db)],
 ) -> AuthResponse:
     user = db.execute(select(User).where(User.email == body.email)).scalar_one_or_none()

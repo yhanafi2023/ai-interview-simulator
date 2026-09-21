@@ -160,4 +160,9 @@ export const handlers = [
       return HttpResponse.json(feedback, { status: 201 })
     },
   ),
+    http.post(`${API_BASE}/auth/refresh`, () =>
+    HttpResponse.json({ detail: 'Invalid or expired session' }, { status: 401 }),
+  ),
+
+  http.post(`${API_BASE}/auth/logout`, () => new HttpResponse(null, { status: 204 })),
 ]
