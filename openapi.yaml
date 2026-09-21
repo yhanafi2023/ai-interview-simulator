@@ -173,6 +173,31 @@ paths:
               application/json:
                 schema:
                   $ref: '#/components/schemas/Feedback'
+      /auth/refresh:
+        post:
+          summary: Exchange a refresh cookie for a new access token
+          operationId: refreshSession
+          responses:
+            '200':
+              description: New access token issued
+              content:
+                application/json:
+                  schema:
+                    $ref: '#/components/schemas/AuthResponse'
+            '401':
+              description: Missing, expired, or reused refresh token
+              content:
+                application/json:
+                  schema:
+                    $ref: '#/components/schemas/ApiError'
+
+    /auth/logout:
+      post:
+        summary: Revoke the current refresh token
+        operationId: logout
+        responses:
+          '204':
+            description: Logged out
 
 components:
   securitySchemes:

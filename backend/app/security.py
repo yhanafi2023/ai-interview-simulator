@@ -7,6 +7,9 @@ from argon2.exceptions import VerificationError, VerifyMismatchError
 
 from app.config import settings
 
+import hashlib
+import secrets
+
 _hasher = PasswordHasher()
 
 
@@ -35,3 +38,11 @@ def create_access_token(subject: str) -> str:
 
 def decode_token(token: str) -> dict[str, Any]:
     return jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
+
+def generate_refresh_token() -> tuple[str,str]:
+    """Generates a new refresh token and its hash."""
+    raw = secrets.token_urlsafe(32)
+    return raw, hash_refresh_token(raw)
+def hash_refresh_token(raw: str) -> str:
+    """Hashes a refresh token using SHA-256."""
+    return hashlib.sha256(raw.encode()).hexdigest()
