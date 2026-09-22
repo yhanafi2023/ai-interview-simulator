@@ -4,15 +4,14 @@
  */
 
 export interface paths {
-    "/auth/me": {
+    get: {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Get the currently logged-in user */
-        get: operations["getCurrentUser"];
+        get?: never;
         put?: never;
         post?: never;
         delete?: never;
@@ -123,6 +122,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Revoke the current refresh token */
+        post: operations["logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -131,6 +147,10 @@ export interface components {
             id: string;
             email: string;
             displayName: string;
+            /** @enum {string} */
+            role: "user" | "admin";
+            /** Format: date-time */
+            createdAt: unknown;
         };
         LoginRequest: {
             email: string;
@@ -201,26 +221,6 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    getCurrentUser: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The current user */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["User"];
-                };
-            };
-        };
-    };
     login: {
         parameters: {
             query?: never;
@@ -311,6 +311,15 @@ export interface operations {
                     };
                 };
             };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
         };
     };
     createSession: {
@@ -335,6 +344,15 @@ export interface operations {
                     "application/json": components["schemas"]["Session"];
                 };
             };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
         };
     };
     getSession: {
@@ -355,6 +373,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Session"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
             /** @description Session not found */
@@ -391,6 +418,33 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Feedback"];
                 };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    logout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Logged out */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

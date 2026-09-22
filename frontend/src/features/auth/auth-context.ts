@@ -3,7 +3,7 @@ import type { User } from '../../types'
 
 export type AuthState = {
   user: User | null
-  accessToken: string | null
+  isBootstrapping: boolean
   signIn: (token: string, user: User) => void
   signOut: () => void
 }

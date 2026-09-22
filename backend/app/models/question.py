@@ -11,9 +11,7 @@ from app.db.base import Base
 class Question(Base):
     __tablename__ = "questions"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     type: Mapped[str] = mapped_column(String(20), index=True, nullable=False)
     difficulty: Mapped[str] = mapped_column(String(20), index=True, nullable=False)
     prompt: Mapped[str] = mapped_column(Text, nullable=False)

@@ -33,6 +33,7 @@ services:
       DATABASE_URL: postgresql+psycopg://interview:interview@db:5432/interview
       REDIS_URL: redis://redis:6379/0
       CORS_ORIGINS: '["http://localhost:5173"]'
+      JWT_SECRET: dev-only-secret-change-in-production
     depends_on:
       db:
         condition: service_healthy

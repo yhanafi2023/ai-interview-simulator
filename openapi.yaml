@@ -5,10 +5,12 @@ info:
   version: 0.1.0
 
 paths:
-  /auth/me:
+    /auth/me:
     get:
       summary: Get the currently logged-in user
       operationId: getCurrentUser
+      security:
+        - bearerAuth: []
       responses:
         '200':
           description: The current user
@@ -16,153 +18,221 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
-  /auth/login:
-    post:
-      summary: Exchange credentials for an access token
-      operationId: login
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/LoginRequest'
-      responses:
-        '200':
-          description: Authenticated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AuthResponse'
         '401':
-          description: Invalid email or password
+          description: Not authenticated
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiError'
-  /auth/register:
-    post:
-      summary: Create a new account
-      operationId: register
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RegisterRequest'
-      responses:
-        '201':
-          description: Account created
+    /auth/login:
+      post:
+        summary: Exchange credentials for an access token
+        operationId: login
+        requestBody:
+          required: true
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthResponse'
-        '409':
-          description: Email already registered
+                $ref: '#/components/schemas/LoginRequest'
+        responses:
+          '200':
+            description: Authenticated
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/AuthResponse'
+          '401':
+            description: Invalid email or password
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ApiError'
+    /auth/register:
+      post:
+        summary: Create a new account
+        operationId: register
+        requestBody:
+          required: true
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/RegisterRequest'
+        responses:
+          '201':
+            description: Account created
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/AuthResponse'
+          '409':
+            description: Email already registered
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ApiError'
 
-  /questions:
-    get:
-      summary: List interview questions
-      operationId: listQuestions
-      parameters:
-        - name: type
-          in: query
-          schema:
-            $ref: '#/components/schemas/InterviewType'
-        - name: limit
-          in: query
-          schema:
-            type: integer
-            default: 20
-      responses:
-        '200':
-          description: A list of questions
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [items, total]
-                properties:
-                  items:
-                    type: array
+    /questions:
+      get:
+        summary: List interview questions
+        operationId: listQuestions
+        security:
+          - bearerAuth: []
+        parameters:
+          - name: type
+            in: query
+            schema:
+              $ref: '#/components/schemas/InterviewType'
+          - name: limit
+            in: query
+            schema:
+              type: integer
+              default: 20
+        responses:
+          '401' :
+            description: Not authenticated
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ApiError'
+          '200':
+            description: A list of questions
+            content:
+              application/json:
+                schema:
+                  type: object
+                  required: [items, total]
+                  properties:
                     items:
-                      $ref: '#/components/schemas/Question'
-                  total:
-                    type: integer
-  /sessions:
-    post:
-      summary: Start a new interview session
-      operationId: createSession
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateSessionRequest'
-      responses:
-        '201':
-          description: Session created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Session'
-
-  /sessions/{sessionId}:
-    get:
-      summary: Get one interview session
-      operationId: getSession
-      parameters:
-        - name: sessionId
-          in: path
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/Question'
+                    total:
+                      type: integer
+    /sessions:
+      post:
+        summary: Start a new interview session
+        operationId: createSession
+        security:
+        - bearerAuth: []
+        requestBody:
           required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: The session
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Session'
-        '404':
-          description: Session not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/CreateSessionRequest'
+        responses:
+          '201':
+            description: Session created
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Session'
+          '401':
+            description: Not authenticated
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ApiError'
 
-  /sessions/{sessionId}/answers:
-    post:
-      summary: Submit an answer and receive feedback
-      operationId: submitAnswer
-      parameters:
-        - name: sessionId
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
+    /sessions/{sessionId}:
+      get:
+        summary: Get one interview session
+        operationId: getSession
+        security:
+          - bearerAuth: []
+        parameters:
+          - name: sessionId
+            in: path
+            required: true
             schema:
-              $ref: '#/components/schemas/SubmitAnswerRequest'
-      responses:
-        '201':
-          description: Feedback for the submitted answer
+              type: string
+        responses:
+          '200':
+            description: The session
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Session'
+          '404':
+            description: Session not found
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ApiError'
+          '401':
+            description: Not authenticated
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ApiError'
+
+    /sessions/{sessionId}/answers:
+      post:
+        summary: Submit an answer and receive feedback
+        operationId: submitAnswer
+        security:
+          - bearerAuth: []
+        parameters:
+          - name: sessionId
+            in: path
+            required: true
+            schema:
+              type: string
+        requestBody:
+          required: true
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Feedback'
+                $ref: '#/components/schemas/SubmitAnswerRequest'
+        responses:
+          '201':
+            description: Feedback for the submitted answer
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Feedback'
+          '401':
+            description: Not authenticated
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ApiError'
+      /auth/refresh:
+        post:
+          summary: Exchange a refresh cookie for a new access token
+          operationId: refreshSession
+          responses:
+            '200':
+              description: New access token issued
+              content:
+                application/json:
+                  schema:
+                    $ref: '#/components/schemas/AuthResponse'
+            '401':
+              description: Missing, expired, or reused refresh token
+              content:
+                application/json:
+                  schema:
+                    $ref: '#/components/schemas/ApiError'
+
+    /auth/logout:
+      post:
+        summary: Revoke the current refresh token
+        operationId: logout
+        responses:
+          '204':
+            description: Logged out
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     User:
       type: object
-      required: [id, email, displayName]
+      required: [id, email, displayName, role, createdAt]
       properties:
         id:
           type: string
@@ -170,6 +240,11 @@ components:
           type: string
         displayName:
           type: string
+        role:
+          type: string
+          enum: [user,admin]
+        createdAt:
+          format: date-time
     LoginRequest:
       type: object
       required: [email, password]
