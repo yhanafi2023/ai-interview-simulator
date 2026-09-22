@@ -112,6 +112,8 @@ paths:
       post:
         summary: Start a new interview session
         operationId: createSession
+        security:
+        - bearerAuth: []
         requestBody:
           required: true
           content:
@@ -125,11 +127,19 @@ paths:
               application/json:
                 schema:
                   $ref: '#/components/schemas/Session'
+          '401':
+            description: Not authenticated
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ApiError'
 
     /sessions/{sessionId}:
       get:
         summary: Get one interview session
         operationId: getSession
+        security:
+          - bearerAuth: []
         parameters:
           - name: sessionId
             in: path
@@ -149,11 +159,19 @@ paths:
               application/json:
                 schema:
                   $ref: '#/components/schemas/ApiError'
+          '401':
+            description: Not authenticated
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ApiError'
 
     /sessions/{sessionId}/answers:
       post:
         summary: Submit an answer and receive feedback
         operationId: submitAnswer
+        security:
+          - bearerAuth: []
         parameters:
           - name: sessionId
             in: path
@@ -173,6 +191,12 @@ paths:
               application/json:
                 schema:
                   $ref: '#/components/schemas/Feedback'
+          '401':
+            description: Not authenticated
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ApiError'
       /auth/refresh:
         post:
           summary: Exchange a refresh cookie for a new access token
