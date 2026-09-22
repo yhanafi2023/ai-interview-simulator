@@ -14,37 +14,50 @@ from app.schemas.auth import AuthResponse, LoginRequest, RegisterRequest, UserOu
 from app.security import (
     create_access_token,
     generate_refresh_token,
-    hash_refresh_token,
     hash_password,
+    hash_refresh_token,
     verify_password,
 )
-
-
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 COOKIE_NAME = "refresh_token"
 COOKIE_PATH = "/auth"
 
+
 def _unauthorized() -> HTTPException:
-    return HTTPException(status_code = status.HTTP_401_UNAUTHORIZED, detail = "Invalid or expired session")
+    return HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired session"
+    )
 
 
-def _issue_refresh_cookie(db : Session, response : Response, user : User, family_id : uuid.UUID | None = None) -> None:
+def _issue_refresh_cookie(
+    db: Session, response: Response, user: User, family_id: uuid.UUID | None = None
+) -> None:
     raw, token_hash = generate_refresh_token()
-    db.add(RefreshToken(user_id = user.id, family_id = family_id or uuid.uuid4(), token_hash = token_hash, expires_at = datetime.now(UTC) + timedelta(days = settings.refresh_token_days)))
-    response.set_cookie(key=COOKIE_NAME,
+    db.add(
+        RefreshToken(
+            user_id=user.id,
+            family_id=family_id or uuid.uuid4(),
+            token_hash=token_hash,
+            expires_at=datetime.now(UTC) + timedelta(days=settings.refresh_token_days),
+        )
+    )
+    response.set_cookie(
+        key=COOKIE_NAME,
         value=raw,
         httponly=True,
         secure=settings.cookie_secure,
         samesite=settings.cookie_samesite,
         max_age=settings.refresh_token_days * 24 * 60 * 60,
-        path=COOKIE_PATH,)
+        path=COOKIE_PATH,
+    )
+
 
 @router.post("/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
 def register(
     body: RegisterRequest,
-    response : Response,
+    response: Response,
     db: Annotated[Session, Depends(get_db)],
 ) -> AuthResponse:
     existing = db.execute(select(User).where(User.email == body.email)).scalar_one_or_none()
@@ -61,7 +74,7 @@ def register(
     )
     db.add(user)
     db.flush()
-    _issue_refresh_cookie(db,response,user)
+    _issue_refresh_cookie(db, response, user)
     db.commit()
     db.refresh(user)
 
@@ -74,7 +87,7 @@ def register(
 @router.post("/login", response_model=AuthResponse)
 def login(
     body: LoginRequest,
-    response : Response,
+    response: Response,
     db: Annotated[Session, Depends(get_db)],
 ) -> AuthResponse:
     user = db.execute(select(User).where(User.email == body.email)).scalar_one_or_none()
@@ -90,18 +103,30 @@ def login(
         access_token=create_access_token(str(user.id)),
         user=UserOut.model_validate(user),
     )
-@router.post("/refresh", response_model = AuthResponse)
-def refresh_session(response : Response, db : Annotated[Session, Depends(get_db)], refresh_token : Annotated[str | None, Cookie()] = None) -> AuthResponse:
+
+
+@router.post("/refresh", response_model=AuthResponse)
+def refresh_session(
+    response: Response,
+    db: Annotated[Session, Depends(get_db)],
+    refresh_token: Annotated[str | None, Cookie()] = None,
+) -> AuthResponse:
     if refresh_token is None:
         raise _unauthorized()
-    record = db.execute(select(RefreshToken).where(RefreshToken.token_hash == hash_refresh_token(refresh_token))).scalar_one_or_none()
+    record = db.execute(
+        select(RefreshToken).where(RefreshToken.token_hash == hash_refresh_token(refresh_token))
+    ).scalar_one_or_none()
     if record is None:
         raise _unauthorized()
     now = datetime.now(UTC)
     if record.revoked_at is not None:
-        db.execute(update(RefreshToken).where(RefreshToken.family_id == record.family_id, RefreshToken.revoked_at.is_(None)).values(revoked_at = now))
+        db.execute(
+            update(RefreshToken)
+            .where(RefreshToken.family_id == record.family_id, RefreshToken.revoked_at.is_(None))
+            .values(revoked_at=now)
+        )
         db.commit()
-        response.delete_cookie(COOKIE_NAME, path = COOKIE_PATH)
+        response.delete_cookie(COOKIE_NAME, path=COOKIE_PATH)
         raise _unauthorized()
     if record.expires_at <= now:
         raise _unauthorized()
@@ -109,17 +134,32 @@ def refresh_session(response : Response, db : Annotated[Session, Depends(get_db)
     if user is None:
         raise _unauthorized()
     record.revoked_at = now
-    _issue_refresh_cookie(db, response, user, family_id = record.family_id)
+    _issue_refresh_cookie(db, response, user, family_id=record.family_id)
     db.commit()
 
-    return AuthResponse(access_token = create_access_token(str(user.id)), user = UserOut.model_validate(user))
+    return AuthResponse(
+        access_token=create_access_token(str(user.id)), user=UserOut.model_validate(user)
+    )
 
-@router.post("/logout", status_code = status.HTTP_204_NO_CONTENT)
-def logout(response : Response, db : Annotated[Session, Depends(get_db)], refresh_token : Annotated[str | None, Cookie()] = None) -> None:
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+def logout(
+    response: Response,
+    db: Annotated[Session, Depends(get_db)],
+    refresh_token: Annotated[str | None, Cookie()] = None,
+) -> None:
     if refresh_token is not None:
-        db.execute(update(RefreshToken).where(RefreshToken.token_hash == hash_refresh_token(refresh_token), RefreshToken.revoked_at.is_(None)).values(revoked_at = datetime.now(UTC)))
+        db.execute(
+            update(RefreshToken)
+            .where(
+                RefreshToken.token_hash == hash_refresh_token(refresh_token),
+                RefreshToken.revoked_at.is_(None),
+            )
+            .values(revoked_at=datetime.now(UTC))
+        )
         db.commit()
-        response.delete_cookie(COOKIE_NAME, path = COOKIE_PATH)
+        response.delete_cookie(COOKIE_NAME, path=COOKIE_PATH)
+
 
 @router.get("/me", response_model=UserOut)
 def me(user: CurrentUser) -> UserOut:

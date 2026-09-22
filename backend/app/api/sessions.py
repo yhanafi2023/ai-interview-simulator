@@ -83,9 +83,7 @@ def create_session(body: CreateSessionRequest, user: CurrentUser, db: DbSession)
     db.flush()
 
     for position, question in enumerate(picked, start=1):
-        db.add(
-            SessionQuestion(session_id=session.id, question_id=question.id, position=position)
-        )
+        db.add(SessionQuestion(session_id=session.id, question_id=question.id, position=position))
 
     db.commit()
     db.refresh(session)

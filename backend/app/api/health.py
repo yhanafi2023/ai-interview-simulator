@@ -1,7 +1,8 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends
 from sqlalchemy import text
 from sqlalchemy.orm import Session
-from typing import Annotated
 
 from app.db.session import get_db
 

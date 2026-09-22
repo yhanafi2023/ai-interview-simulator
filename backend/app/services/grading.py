@@ -18,16 +18,24 @@ class GradingResult:
 
 
 def grade_answer(*, prompt: str, answer: str) -> GradingResult:
-    
+
     length = len(answer.strip())
     base = 8 if length > 400 else 6 if length > 150 else 4
 
     return GradingResult(
         scores=[
-            ScoreResult("correctness", base, "The core approach is sound but skips a key constraint."),
-            ScoreResult("communication", min(10, base + 1), "Clear structure. State your assumptions earlier."),
+            ScoreResult(
+                "correctness", base, "The core approach is sound but skips a key constraint."
+            ),
+            ScoreResult(
+                "communication",
+                min(10, base + 1),
+                "Clear structure. State your assumptions earlier.",
+            ),
             ScoreResult("depth", max(1, base - 1), "Complexity is mentioned but not derived."),
-            ScoreResult("edge_cases", max(1, base - 2), "Empty and single-element inputs are not addressed."),
+            ScoreResult(
+                "edge_cases", max(1, base - 2), "Empty and single-element inputs are not addressed."
+            ),
         ],
         strengths=[
             "You explained your approach before writing code.",

@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
     environment: str = "development"
@@ -9,7 +10,8 @@ class Settings(BaseSettings):
     jwt_secret: str = "dev-only-secret-change-in-production"
     access_token_minutes: int = 15
     refresh_token_days: int = 7
-    cookie_secure : bool = False
-    cookie_samesite : str = "lax"
+    cookie_secure: bool = False
+    cookie_samesite: str = "lax"
+
 
 settings = Settings()
