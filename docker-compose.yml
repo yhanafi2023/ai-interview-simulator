@@ -1,3 +1,10 @@
+x-backend-env: &backend-env
+  DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-interview}:${POSTGRES_PASSWORD:-interview}@db:5432/${POSTGRES_DB:-interview}
+  REDIS_URL: redis://redis:6379/0
+  JWT_SECRET: ${JWT_SECRET:-dev-only-secret-change-in-production}
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+  CORS_ORIGINS: '["http://localhost:5173","http://127.0.0.1:5173"]'
+
 services:
   db:
     image: postgres:17-alpine
@@ -29,13 +36,7 @@ services:
     build: ./backend
     ports:
       - '8000:8000'
-    environment:
-      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-interview}:${POSTGRES_PASSWORD:-interview}@db:5432/${POSTGRES_DB:-interview}
-      REDIS_URL: redis://redis:6379/0
-      CORS_ORIGINS: '["http://localhost:5173"]'
-      JWT_SECRET: ${JWT_SECRET:-dev-only-secret-change-in-production}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      
+    environment: *backend-env
     depends_on:
       db:
         condition: service_healthy
@@ -44,6 +45,18 @@ services:
     volumes:
       - ./backend/app:/app/app
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  worker:
+    build: ./backend
+    environment: *backend-env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend/app:/app/app
+    command: python -m app.worker
 
 volumes:
   pgdata:

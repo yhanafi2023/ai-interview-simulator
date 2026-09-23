@@ -11,16 +11,21 @@ from app.api.deps import CurrentUser
 from app.db.session import get_db
 from app.models import Answer, Feedback, InterviewSession, Question, Score, SessionQuestion
 from app.models.user import User
+from app.models import (
+    Answer,
+    GradingJob,
+    InterviewSession,
+    Question,
+    SessionQuestion,
+)
+from app.queue import get_queue
 from app.schemas.interview import (
     CreateSessionRequest,
-    FeedbackOut,
-    ScoreOut,
+    GradingJobOut,
     SessionOut,
     SubmitAnswerRequest,
 )
-from app.schemas.question import QuestionOut
-from app.services.budget import llm_allowed
-from app.services.grading import grade_answer
+from app.tasks.grading import grade_answer_task
 
 logger = logging.getLogger(__name__)
 
@@ -102,15 +107,15 @@ def get_session(session_id: uuid.UUID, user: CurrentUser, db: DbSession) -> Sess
 
 @router.post(
     "/{session_id}/answers",
-    response_model=FeedbackOut,
-    status_code=status.HTTP_201_CREATED,
+    response_model=GradingJobOut,
+    status_code=status.HTTP_202_ACCEPTED,
 )
 def submit_answer(
     session_id: uuid.UUID,
     body: SubmitAnswerRequest,
     user: CurrentUser,
     db: DbSession,
-) -> FeedbackOut:
+) -> GradingJobOut:
     session = _owned_session(db, session_id, user)
 
     if session.status != "in_progress":
@@ -144,37 +149,16 @@ def submit_answer(
             detail="You have already answered this question",
         )
 
-    question = db.get(Question, body.question_id)
-    if question is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Question not found")
-
-    answer = Answer(session_id=session.id, question_id=question.id, content=body.content)
+    answer = Answer(
+        session_id=session.id,
+        question_id=body.question_id,
+        content=body.content,
+    )
     db.add(answer)
     db.flush()
-    allowed, reason = llm_allowed(db, user.id)
-    if not allowed:
-        logger.info("llm grading skipped: %s", reason)
-    result = grade_answer(prompt=question.prompt, answer=body.content, allow_llm=allowed)
 
-    feedback = Feedback(
-        answer_id=answer.id,
-        strengths=result.strengths,
-        improvements=result.improvements,
-        follow_up_question=result.follow_up_question,
-        prompt_version=result.prompt_version,
-    )
-    db.add(feedback)
-    db.flush()
-
-    for score in result.scores:
-        db.add(
-            Score(
-                feedback_id=feedback.id,
-                dimension=score.dimension,
-                value=score.value,
-                justification=score.justification,
-            )
-        )
+    job = GradingJob(answer_id=answer.id)
+    db.add(job)
 
     answered = db.execute(
         select(func.count()).select_from(Answer).where(Answer.session_id == session.id)
@@ -186,14 +170,13 @@ def submit_answer(
 
     db.commit()
 
-    return FeedbackOut(
+    get_queue().enqueue(grade_answer_task, str(job.id), job_timeout=180)
+
+    logger.info("queued grading job %s for answer %s", job.id, answer.id)
+
+    return GradingJobOut(
+        id=job.id,
         answer_id=answer.id,
-        question_id=question.id,
-        scores=[
-            ScoreOut(dimension=s.dimension, value=s.value, justification=s.justification)
-            for s in result.scores
-        ],
-        strengths=result.strengths,
-        improvements=result.improvements,
-        follow_up_question=result.follow_up_question,
+        question_id=body.question_id,
+        status="queued",
     )

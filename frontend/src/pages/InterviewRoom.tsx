@@ -6,7 +6,12 @@ import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import FeedbackPanel from '../features/auth/interview/FeedbackPanel'
 import { api } from '../lib/api'
-import type { Feedback, Session, SubmitAnswerRequest } from '../types'
+import type { GradingJob, Session, SubmitAnswerRequest } from '../types'
+
+const STATUS_LABEL: Record<string, string> = {
+  queued: 'Waiting for a grader…',
+  running: 'Analyzing your answer…',
+}
 
 export default function InterviewRoom() {
   const { sessionId } = useParams<{ sessionId: string }>()
@@ -14,7 +19,7 @@ export default function InterviewRoom() {
 
   const [index, setIndex] = useState(0)
   const [answer, setAnswer] = useState('')
-  const [feedback, setFeedback] = useState<Feedback | null>(null)
+  const [jobId, setJobId] = useState<string | null>(null)
 
   const {
     data: session,
@@ -29,8 +34,18 @@ export default function InterviewRoom() {
 
   const submit = useMutation({
     mutationFn: (body: SubmitAnswerRequest) =>
-      api.post<Feedback>(`/sessions/${sessionId}/answers`, body),
-    onSuccess: (data) => setFeedback(data),
+      api.post<GradingJob>(`/sessions/${sessionId}/answers`, body),
+    onSuccess: (job) => setJobId(job.id),
+  })
+
+  const jobQuery = useQuery({
+    queryKey: ['job', jobId],
+    queryFn: () => api.get<GradingJob>(`/jobs/${jobId}`),
+    enabled: Boolean(jobId),
+    refetchInterval: (query) => {
+      const status = query.state.data?.status
+      return status === 'succeeded' || status === 'failed' ? false : 1000
+    },
   })
 
   if (isPending) return <p className="text-slate-400">Loading session…</p>
@@ -39,10 +54,14 @@ export default function InterviewRoom() {
   const question = session.questions[index]
   const isLastQuestion = index === session.questions.length - 1
 
+  const job = jobQuery.data
+  const feedback = job?.status === 'succeeded' ? job.feedback : undefined
+  const isGrading = Boolean(jobId) && job?.status !== 'succeeded' && job?.status !== 'failed'
+
   function goToNextQuestion() {
     setIndex((current) => current + 1)
     setAnswer('')
-    setFeedback(null)
+    setJobId(null)
     submit.reset()
   }
 
@@ -70,43 +89,47 @@ export default function InterviewRoom() {
             id="answer"
             value={answer}
             onChange={(event) => setAnswer(event.target.value)}
-            disabled={Boolean(feedback)}
+            disabled={Boolean(jobId)}
             rows={10}
+            maxLength={6000}
             placeholder="Explain your approach first, then walk through the solution…"
             className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 p-3 text-sm text-slate-100 placeholder:text-slate-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 disabled:opacity-60"
           />
 
           <div className="mt-3 flex items-center justify-between">
-            <span className="text-xs text-slate-500">{answer.trim().length} characters</span>
-            {!feedback && (
+            <span className="text-xs text-slate-500">{answer.trim().length} / 6000</span>
+            {!jobId && (
               <Button
                 disabled={answer.trim().length === 0 || submit.isPending}
                 onClick={() => submit.mutate({ questionId: question.id, content: answer })}
               >
-                {submit.isPending ? 'Grading…' : 'Submit answer'}
+                {submit.isPending ? 'Submitting…' : 'Submit answer'}
               </Button>
             )}
           </div>
         </Card>
 
-        {submit.isPending && (
+        {submit.isError && (
+          <Card>
+            <p className="text-sm text-red-400">Could not submit: {submit.error.message}</p>
+          </Card>
+        )}
+
+        {isGrading && (
           <Card>
             <p className="animate-pulse text-sm text-slate-400">
-              Analyzing your answer and writing feedback…
+              {STATUS_LABEL[job?.status ?? 'queued'] ?? 'Waiting…'}
             </p>
           </Card>
         )}
 
-        {submit.isError && (
+        {job?.status === 'failed' && (
           <Card>
-            <p className="text-sm text-red-400">Grading failed: {submit.error.message}</p>
-            <Button
-              size="sm"
-              variant="secondary"
-              className="mt-3"
-              onClick={() => submit.mutate({ questionId: question.id, content: answer })}
-            >
-              Retry
+            <p className="text-sm text-red-400">
+              Grading failed{job.error ? `: ${job.error}` : ''}
+            </p>
+            <Button size="sm" variant="secondary" className="mt-3" onClick={goToNextQuestion}>
+              Skip to next question
             </Button>
           </Card>
         )}

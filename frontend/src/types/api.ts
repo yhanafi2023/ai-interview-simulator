@@ -139,6 +139,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/jobs/{jobId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the status of a grading job */
+        get: operations["getGradingJob"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -211,6 +228,19 @@ export interface components {
             strengths: string[];
             improvements: string[];
             followUpQuestion?: string;
+        };
+        /** @enum {string} */
+        JobStatus: "queued" | "running" | "succeeded" | "failed";
+        GradingJob: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            answerId: string;
+            /** Format: uuid */
+            questionId: string;
+            status: components["schemas"]["JobStatus"];
+            error?: string;
+            feedback?: components["schemas"]["Feedback"];
         };
     };
     responses: never;
@@ -410,17 +440,35 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Feedback for the submitted answer */
-            201: {
+            /** @description Answer accepted; grading has been queued */
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Feedback"];
+                    "application/json": components["schemas"]["GradingJob"];
+                };
+            };
+            /** @description That question is not part of this session */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
             /** @description Not authenticated */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Already answered, or the session is complete */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -445,6 +493,37 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    getGradingJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                jobId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Job status, including feedback once it has succeeded */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GradingJob"];
+                };
+            };
+            /** @description Job not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
             };
         };
     };

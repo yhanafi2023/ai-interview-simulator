@@ -9,7 +9,28 @@ from app.schemas.question import Difficulty, InterviewType, QuestionOut
 
 SessionStatus = Literal["in_progress", "completed"]
 ScoreDimension = Literal["correctness", "communication", "depth", "edge_cases"]
+JobStatus = Literal["queued", "running", "succeeded", "failed"]
 
+class ScoreOut(CamelModel):
+    dimension: ScoreDimension
+    value: int = Field(ge=0, le=10)
+    justification: str
+
+class FeedbackOut(CamelModel):
+    answer_id: uuid.UUID
+    question_id: uuid.UUID
+    scores: list[ScoreOut]
+    strengths: list[str]
+    improvements: list[str]
+    follow_up_question: str | None = None
+
+class GradingJobOut(CamelModel):
+    id: uuid.UUID
+    answer_id: uuid.UUID
+    question_id: uuid.UUID
+    status: JobStatus
+    error: str | None = None
+    feedback: FeedbackOut | None = None
 
 class CreateSessionRequest(CamelModel):
     type: InterviewType
@@ -29,19 +50,10 @@ class SessionOut(CamelModel):
 
 
 
-class ScoreOut(CamelModel):
-    dimension: ScoreDimension
-    value: int = Field(ge=0, le=10)
-    justification: str
 
 
-class FeedbackOut(CamelModel):
-    answer_id: uuid.UUID
-    question_id: uuid.UUID
-    scores: list[ScoreOut]
-    strengths: list[str]
-    improvements: list[str]
-    follow_up_question: str | None = None
+
+
 class SubmitAnswerRequest(CamelModel):
     question_id: uuid.UUID
     content: str = Field(min_length=1, max_length=6000)
