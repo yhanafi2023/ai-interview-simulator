@@ -12,6 +12,14 @@ class Settings(BaseSettings):
     refresh_token_days: int = 7
     cookie_secure: bool = False
     cookie_samesite: str = "lax"
+    anthropic_api_key: str = ""
+    anthropic_model: str = "claude-sonnet-4-5-20250929"
+    anthropic_max_tokens: int = 1024
+    anthropic_timeout_seconds: float = 30.0
+    anthropic_max_retries: int = 3
+
+    llm_daily_call_budget: int = 200
+    llm_user_daily_call_budget: int = 20
 
 
 settings = Settings()

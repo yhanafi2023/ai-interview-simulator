@@ -26,9 +26,7 @@ class SessionOut(CamelModel):
     questions: list[QuestionOut]
 
 
-class SubmitAnswerRequest(CamelModel):
-    question_id: uuid.UUID
-    content: str = Field(min_length=1)
+
 
 
 class ScoreOut(CamelModel):
@@ -44,3 +42,6 @@ class FeedbackOut(CamelModel):
     strengths: list[str]
     improvements: list[str]
     follow_up_question: str | None = None
+class SubmitAnswerRequest(CamelModel):
+    question_id: uuid.UUID
+    content: str = Field(min_length=1, max_length=6000)

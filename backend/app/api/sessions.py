@@ -1,3 +1,4 @@
+import logging
 import uuid
 from datetime import UTC, datetime
 from typing import Annotated
@@ -18,7 +19,10 @@ from app.schemas.interview import (
     SubmitAnswerRequest,
 )
 from app.schemas.question import QuestionOut
+from app.services.budget import llm_allowed
 from app.services.grading import grade_answer
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
 
@@ -147,8 +151,10 @@ def submit_answer(
     answer = Answer(session_id=session.id, question_id=question.id, content=body.content)
     db.add(answer)
     db.flush()
-
-    result = grade_answer(prompt=question.prompt, answer=body.content)
+    allowed, reason = llm_allowed(db, user.id)
+    if not allowed:
+        logger.info("llm grading skipped: %s", reason)
+    result = grade_answer(prompt=question.prompt, answer=body.content, allow_llm=allowed)
 
     feedback = Feedback(
         answer_id=answer.id,
