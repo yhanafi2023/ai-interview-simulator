@@ -1,0 +1,3 @@
+terview-simulator/backend && pytest -q tests/test_sessions.py -vv
+ cd /home/bro/ai-interview-simulator && docker compose ps
+

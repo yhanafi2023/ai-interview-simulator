@@ -1,54 +1,39 @@
-from dataclasses import dataclass
+import logging
+
+from app.services.llm import GradingUnavailable, grade_with_claude
+from app.services.prompts import GRADING_PROMPT_VERSION
+from app.services.results import HEURISTIC_VERSION, GradingResult, ScoreResult
+
+logger = logging.getLogger(__name__)
 
 
-@dataclass(frozen=True)
-class ScoreResult:
-    dimension: str
-    value: int
-    justification: str
-
-
-@dataclass(frozen=True)
-class GradingResult:
-    scores: list[ScoreResult]
-    strengths: list[str]
-    improvements: list[str]
-    follow_up_question: str | None
-    prompt_version: str
-
-
-def grade_answer(*, prompt: str, answer: str) -> GradingResult:
-
+def _grade_heuristic(answer: str) -> GradingResult:
     length = len(answer.strip())
     base = 8 if length > 400 else 6 if length > 150 else 4
 
     return GradingResult(
         scores=[
-            ScoreResult(
-                "correctness", base, "The core approach is sound but skips a key constraint."
-            ),
-            ScoreResult(
-                "communication",
-                min(10, base + 1),
-                "Clear structure. State your assumptions earlier.",
-            ),
-            ScoreResult("depth", max(1, base - 1), "Complexity is mentioned but not derived."),
-            ScoreResult(
-                "edge_cases", max(1, base - 2), "Empty and single-element inputs are not addressed."
-            ),
+            ScoreResult("correctness", base, "Automated fallback: scored on answer length."),
+            ScoreResult("communication", min(10, base + 1), "Automated fallback."),
+            ScoreResult("depth", max(1, base - 1), "Automated fallback."),
+            ScoreResult("edge_cases", max(1, base - 2), "Automated fallback."),
         ],
-        strengths=[
-            "You explained your approach before writing code.",
-            "Variable naming was clear and consistent.",
-        ],
-        improvements=[
-            "Walk through at least one edge case out loud.",
-            "Give the time and space complexity explicitly.",
-        ],
-        follow_up_question=(
-            "How would your solution change if the input did not fit in memory?"
-            if length > 150
-            else None
-        ),
-        prompt_version="v0-heuristic",
+        strengths=["Your answer was recorded."],
+        improvements=["Detailed AI feedback was unavailable for this answer."],
+        follow_up_question=None,
+        prompt_version=HEURISTIC_VERSION,
     )
+
+
+def grade_answer(*, prompt: str, answer: str, allow_llm: bool = True) -> GradingResult:
+    if not allow_llm:
+        return _grade_heuristic(answer)
+
+    try:
+        return grade_with_claude(question=prompt, answer=answer)
+    except GradingUnavailable:
+        logger.exception("llm grading unavailable, falling back to heuristic")
+        return _grade_heuristic(answer)
+
+
+__all__ = ["GRADING_PROMPT_VERSION", "GradingResult", "ScoreResult", "grade_answer"]

@@ -2,15 +2,15 @@ services:
   db:
     image: postgres:17-alpine
     environment:
-      POSTGRES_USER: interview
-      POSTGRES_PASSWORD: interview
-      POSTGRES_DB: interview
+      POSTGRES_USER: ${POSTGRES_USER:-interview}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-interview}
+      POSTGRES_DB: ${POSTGRES_DB:-interview}
     ports:
       - '5432:5432'
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U interview']
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-interview}']
       interval: 5s
       timeout: 3s
       retries: 10
@@ -30,10 +30,12 @@ services:
     ports:
       - '8000:8000'
     environment:
-      DATABASE_URL: postgresql+psycopg://interview:interview@db:5432/interview
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-interview}:${POSTGRES_PASSWORD:-interview}@db:5432/${POSTGRES_DB:-interview}
       REDIS_URL: redis://redis:6379/0
       CORS_ORIGINS: '["http://localhost:5173"]'
-      JWT_SECRET: dev-only-secret-change-in-production
+      JWT_SECRET: ${JWT_SECRET:-dev-only-secret-change-in-production}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      
     depends_on:
       db:
         condition: service_healthy
