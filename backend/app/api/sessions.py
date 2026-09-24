@@ -9,15 +9,8 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import CurrentUser
 from app.db.session import get_db
-from app.models import Answer, Feedback, InterviewSession, Question, Score, SessionQuestion
+from app.models import Answer, GradingJob, InterviewSession, Question, SessionQuestion
 from app.models.user import User
-from app.models import (
-    Answer,
-    GradingJob,
-    InterviewSession,
-    Question,
-    SessionQuestion,
-)
 from app.queue import get_queue
 from app.schemas.interview import (
     CreateSessionRequest,
@@ -25,6 +18,7 @@ from app.schemas.interview import (
     SessionOut,
     SubmitAnswerRequest,
 )
+from app.schemas.question import QuestionOut
 from app.tasks.grading import grade_answer_task
 
 logger = logging.getLogger(__name__)

@@ -7,6 +7,9 @@ import Card from '../components/ui/Card'
 import FeedbackPanel from '../features/auth/interview/FeedbackPanel'
 import { api } from '../lib/api'
 import type { GradingJob, Session, SubmitAnswerRequest } from '../types'
+import { useEffect } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import { streamJob } from '../lib/job-stream'
 
 const STATUS_LABEL: Record<string, string> = {
   queued: 'Waiting for a grader…',
@@ -16,7 +19,7 @@ const STATUS_LABEL: Record<string, string> = {
 export default function InterviewRoom() {
   const { sessionId } = useParams<{ sessionId: string }>()
   const navigate = useNavigate()
-
+  const queryClient = useQueryClient()
   const [index, setIndex] = useState(0)
   const [answer, setAnswer] = useState('')
   const [jobId, setJobId] = useState<string | null>(null)
@@ -38,15 +41,31 @@ export default function InterviewRoom() {
     onSuccess: (job) => setJobId(job.id),
   })
 
-  const jobQuery = useQuery({
+    const jobQuery = useQuery({
     queryKey: ['job', jobId],
     queryFn: () => api.get<GradingJob>(`/jobs/${jobId}`),
     enabled: Boolean(jobId),
     refetchInterval: (query) => {
       const status = query.state.data?.status
-      return status === 'succeeded' || status === 'failed' ? false : 1000
+      return status === 'succeeded' || status === 'failed' ? false : 10000
     },
   })
+
+  useEffect(() => {
+    if (!jobId) return
+
+    const stop = streamJob(jobId, (event) => {
+      queryClient.setQueryData<GradingJob>(['job', jobId], (previous) =>
+        previous ? { ...previous, status: event.status as GradingJob['status'] } : previous,
+      )
+
+      if (event.status === 'succeeded' || event.status === 'failed') {
+        void queryClient.invalidateQueries({ queryKey: ['job', jobId] })
+      }
+    })
+
+    return stop
+  }, [jobId, queryClient])
 
   if (isPending) return <p className="text-slate-400">Loading session…</p>
   if (isError) return <p className="text-red-400">{error.message}</p>

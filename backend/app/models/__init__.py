@@ -1,3 +1,4 @@
+from app.models.grading_job import GradingJob
 from app.models.interview import (
     Answer,
     Feedback,
@@ -8,7 +9,6 @@ from app.models.interview import (
 from app.models.question import Question
 from app.models.refresh_token import RefreshToken
 from app.models.user import User
-from app.models.grading_job import GradingJob
 
 __all__ = [
     "Answer",

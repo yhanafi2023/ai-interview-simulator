@@ -3,7 +3,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import auth, health, questions, sessions, jobs
+from app.api import auth, health, jobs, questions, sessions
 from app.config import settings
 
 logging.basicConfig(

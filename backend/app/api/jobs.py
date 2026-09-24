@@ -1,14 +1,22 @@
+import json
+import time
 import uuid
+from collections.abc import Iterator
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.deps import CurrentUser
 from app.db.session import get_db
 from app.models import Answer, Feedback, GradingJob, InterviewSession, Score
+from app.redis_client import get_redis
 from app.schemas.interview import FeedbackOut, GradingJobOut, ScoreOut
+
+TERMINAL = {"succeeded", "failed"}
+STREAM_TIMEOUT_SECONDS = 180
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
@@ -70,3 +78,46 @@ def serialize_job(db: Session, job: GradingJob, answer: Answer) -> GradingJobOut
 def get_job(job_id: uuid.UUID, user: CurrentUser, db: DbSession) -> GradingJobOut:
     job, answer = _load_owned_job(db, job_id, user.id)
     return serialize_job(db, job, answer)
+@router.get("/{job_id}/stream")
+def stream_job(job_id: uuid.UUID, user: CurrentUser, db: DbSession) -> StreamingResponse:
+    job, _answer = _load_owned_job(db, job_id, user.id)
+    initial_status = job.status
+
+    def events() -> Iterator[str]:
+        yield f"data: {json.dumps({'status': initial_status})}\n\n"
+
+        if initial_status in TERMINAL:
+            return
+
+        pubsub = get_redis().pubsub()
+        pubsub.subscribe(f"grading:{job_id}")
+        deadline = time.monotonic() + STREAM_TIMEOUT_SECONDS
+
+        try:
+            while time.monotonic() < deadline:
+                message = pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
+
+                if message is None:
+                    yield ": keep-alive\n\n"
+                    continue
+
+                data = message["data"]
+                yield f"data: {data}\n\n"
+
+                try:
+                    if json.loads(data).get("status") in TERMINAL:
+                        return
+                except (ValueError, AttributeError):
+                    continue
+        finally:
+            pubsub.close()
+
+    return StreamingResponse(
+        events(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )

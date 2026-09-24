@@ -18,6 +18,17 @@ TEST_DB_NAME = "interview_test"
 BASE_URL = settings.database_url.rsplit("/", 1)[0]
 TEST_DATABASE_URL = f"{BASE_URL}/{TEST_DB_NAME}"
 
+class _FakeJob:
+    id = "fake-rq-job-id"
+
+
+class _FakeQueue:
+    def __init__(self) -> None:
+        self.calls: list[tuple] = []
+
+    def enqueue(self, func, *args, **kwargs):  # noqa: ANN001, ANN002, ANN003, ANN202
+        self.calls.append((func, args, kwargs))
+        return _FakeJob()
 
 @pytest.fixture(scope="session")
 def engine() -> Generator[Engine]:
@@ -94,3 +105,26 @@ def auth_headers(client: TestClient, db: Session, user: User) -> dict[str, str]:
     )
     token = response.json()["accessToken"]
     return {"Authorization": f"Bearer {token}"}
+@pytest.fixture(autouse=True)
+def fake_queue(monkeypatch: pytest.MonkeyPatch) -> _FakeQueue:
+    queue = _FakeQueue()
+    monkeypatch.setattr("app.api.sessions.get_queue", lambda: queue)
+    return queue
+
+
+@pytest.fixture
+def task_db(db, monkeypatch: pytest.MonkeyPatch):  # noqa: ANN001, ANN201
+    """Make the worker task use the test session instead of opening its own."""
+
+    class _NoCloseSession:
+        def __init__(self, inner):  # noqa: ANN001
+            self._inner = inner
+
+        def __getattr__(self, name):  # noqa: ANN001, ANN204
+            return getattr(self._inner, name)
+
+        def close(self) -> None:
+            pass
+
+    monkeypatch.setattr("app.tasks.grading.SessionLocal", lambda: _NoCloseSession(db))
+    return db
