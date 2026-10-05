@@ -2,6 +2,7 @@ import logging
 import uuid
 from datetime import UTC, datetime
 from typing import Annotated
+from app.config import settings
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func, select
@@ -23,6 +24,7 @@ from app.tasks.grading import grade_answer_task
 from fastapi import Header
 from app.services.idempotency import claim, save_response, stored_response
 from rq import Retry
+from app.services.rate_limit import consume
 
 logger = logging.getLogger(__name__)
 
@@ -161,6 +163,17 @@ def submit_answer(
             scope,
             idempotency_key,
             result.model_dump(mode="json", by_alias=True),
+        )
+    limit = consume(
+        f"grading:{user.id}",
+        capacity=settings.grading_bucket_capacity,
+        refill_per_second=settings.grading_bucket_refill_per_day / 86400,
+    )
+    if not limit.allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="You have submitted too many answers. Please try again later.",
+            headers={"Retry-After": str(limit.retry_after_seconds)},
         )
 
     return result

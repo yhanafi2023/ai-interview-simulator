@@ -20,6 +20,10 @@ class Settings(BaseSettings):
 
     llm_daily_call_budget: int = 200
     llm_user_daily_call_budget: int = 20
+    grading_bucket_capacity: int = 20
+    grading_bucket_refill_per_day: int = 20
+    login_bucket_capacity: int = 10
+    login_bucket_refill_per_hour: int = 10
 
 
 settings = Settings()

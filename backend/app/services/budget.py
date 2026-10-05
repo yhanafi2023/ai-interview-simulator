@@ -29,22 +29,12 @@ def _global_calls() -> Any:  # noqa: ANN401
 
 
 def llm_allowed(db: Session, user_id: uuid.UUID) -> tuple[bool, str | None]:
-    """Decide whether this request may spend money on an LLM call."""
+    """Global cost ceiling. Per-user fairness is handled by the rate limiter."""
     if not settings.anthropic_api_key:
         return False, "no api key configured"
 
     global_calls = db.execute(_global_calls()).scalar_one()
     if global_calls >= settings.llm_daily_call_budget:
         return False, f"global 24h budget reached ({global_calls})"
-
-    user_calls = db.execute(
-        _global_calls()
-        .join(Answer, Answer.id == Feedback.answer_id)
-        .join(InterviewSession, InterviewSession.id == Answer.session_id)
-        .where(InterviewSession.user_id == user_id)
-    ).scalar_one()
-
-    if user_calls >= settings.llm_user_daily_call_budget:
-        return False, f"user 24h budget reached ({user_calls})"
 
     return True, None

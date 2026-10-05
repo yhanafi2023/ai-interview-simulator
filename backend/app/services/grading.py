@@ -1,5 +1,6 @@
 import logging
 
+from app.services.cache import cache_key, get_cached, set_cached
 from app.services.llm import GradingUnavailable, grade_with_claude
 from app.services.prompts import GRADING_PROMPT_VERSION
 from app.services.results import HEURISTIC_VERSION, GradingResult, ScoreResult
@@ -25,15 +26,35 @@ def _grade_heuristic(answer: str) -> GradingResult:
     )
 
 
-def grade_answer(*, prompt: str, answer: str, allow_llm: bool = True) -> GradingResult:
+def grade_answer(
+    *,
+    prompt: str,
+    answer: str,
+    question_id: str = "",
+    allow_llm: bool = True,
+) -> GradingResult:
+    key = cache_key(
+        prompt_version=GRADING_PROMPT_VERSION,
+        question_id=question_id,
+        answer=answer,
+    )
+
+    cached = get_cached(key)
+    if cached is not None:
+        logger.info("grade cache hit for question %s", question_id)
+        return cached
+
     if not allow_llm:
         return _grade_heuristic(answer)
 
     try:
-        return grade_with_claude(question=prompt, answer=answer)
+        result = grade_with_claude(question=prompt, answer=answer)
     except GradingUnavailable:
         logger.exception("llm grading unavailable, falling back to heuristic")
         return _grade_heuristic(answer)
+
+    set_cached(key, result)
+    return result
 
 
 __all__ = ["GRADING_PROMPT_VERSION", "GradingResult", "ScoreResult", "grade_answer"]

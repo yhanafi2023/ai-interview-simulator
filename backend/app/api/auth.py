@@ -11,6 +11,7 @@ from app.config import settings
 from app.db.session import get_db
 from app.models import RefreshToken, User
 from app.schemas.auth import AuthResponse, LoginRequest, RegisterRequest, UserOut
+from app.services.rate_limit import consume
 from app.security import (
     create_access_token,
     generate_refresh_token,
@@ -90,6 +91,17 @@ def login(
     response: Response,
     db: Annotated[Session, Depends(get_db)],
 ) -> AuthResponse:
+    limit = consume(
+        f"login:{body.email.lower()}",
+        capacity=settings.login_bucket_capacity,
+        refill_per_second=settings.login_bucket_refill_per_hour / 3600,
+    )
+    if not limit.allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many login attempts. Please try again later.",
+            headers={"Retry-After": str(limit.retry_after_seconds)},
+        )
     user = db.execute(select(User).where(User.email == body.email)).scalar_one_or_none()
 
     if user is None or not verify_password(body.password, user.password_hash):

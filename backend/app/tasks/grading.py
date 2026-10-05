@@ -56,6 +56,7 @@ def grade_answer_task(job_id: str) -> None:
         result = grade_answer(
             prompt=question.prompt,
             answer=answer.content,
+            question_id=str(question.id),
             allow_llm=allowed,
         )
 
