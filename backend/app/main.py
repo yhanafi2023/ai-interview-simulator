@@ -3,7 +3,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import auth, health, jobs, questions, sessions
+from app.api import auth, health, jobs, metrics, questions, sessions
 from app.config import settings
 
 logging.basicConfig(
@@ -28,3 +28,4 @@ app.include_router(auth.router)
 app.include_router(questions.router)
 app.include_router(sessions.router)
 app.include_router(jobs.router)
+app.include_router(metrics.router)

@@ -6,21 +6,17 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
-from sqlalchemy import select
-from sqlalchemy.orm import Session
-from sqlalchemy import func
-
-from app.api.deps import CurrentUser
-from app.db.session import get_db
-from app.models import Answer, Feedback, GradingJob, InterviewSession, Score
-from app.redis_client import get_redis
-from app.schemas.interview import FeedbackOut, GradingJobOut, ScoreOut
-
 from rq import Queue
 from rq.registry import FailedJobRegistry
+from sqlalchemy import func, select
+from sqlalchemy.orm import Session
 
-from app.api.deps import AdminUser
+from app.api.deps import AdminUser, CurrentUser
+from app.db.session import get_db
+from app.models import Answer, Feedback, GradingJob, InterviewSession, Score
 from app.queue import GRADING_QUEUE, get_rq_connection
+from app.redis_client import get_redis
+from app.schemas.interview import FeedbackOut, GradingJobOut, ScoreOut
 
 TERMINAL = {"succeeded", "failed"}
 STREAM_TIMEOUT_SECONDS = 180
