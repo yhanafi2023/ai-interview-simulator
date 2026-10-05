@@ -11,7 +11,6 @@ from app.config import settings
 from app.db.session import get_db
 from app.models import RefreshToken, User
 from app.schemas.auth import AuthResponse, LoginRequest, RegisterRequest, UserOut
-from app.services.rate_limit import consume
 from app.security import (
     create_access_token,
     generate_refresh_token,
@@ -19,6 +18,7 @@ from app.security import (
     hash_refresh_token,
     verify_password,
 )
+from app.services.rate_limit import consume
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 

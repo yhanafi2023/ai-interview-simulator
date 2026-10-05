@@ -7,7 +7,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.config import settings
-from app.models import Answer, Feedback, InterviewSession
+from app.models import Feedback
 from app.services.results import HEURISTIC_VERSION
 
 logger = logging.getLogger(__name__)

@@ -2,13 +2,14 @@ import logging
 import uuid
 from datetime import UTC, datetime
 from typing import Annotated
-from app.config import settings
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, status
+from rq import Retry
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import CurrentUser
+from app.config import settings
 from app.db.session import get_db
 from app.models import Answer, GradingJob, InterviewSession, Question, SessionQuestion
 from app.models.user import User
@@ -20,11 +21,9 @@ from app.schemas.interview import (
     SubmitAnswerRequest,
 )
 from app.schemas.question import QuestionOut
-from app.tasks.grading import grade_answer_task
-from fastapi import Header
 from app.services.idempotency import claim, save_response, stored_response
-from rq import Retry
 from app.services.rate_limit import consume
+from app.tasks.grading import grade_answer_task
 
 logger = logging.getLogger(__name__)
 
@@ -104,11 +103,7 @@ def get_session(session_id: uuid.UUID, user: CurrentUser, db: DbSession) -> Sess
     return _serialize(_owned_session(db, session_id, user))
 
 
-@router.post(
-    "/{session_id}/answers",
-    response_model=GradingJobOut,
-    status_code=status.HTTP_202_ACCEPTED,
-)
+
 @router.post(
     "/{session_id}/answers",
     response_model=GradingJobOut,
@@ -137,7 +132,68 @@ def submit_answer(
 
     session = _owned_session(db, session_id, user)
 
-    # ... all the existing validation and insert logic, unchanged ...
+    if session.status != "in_progress":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This session is already complete",
+        )
+
+    in_session = db.execute(
+        select(SessionQuestion).where(
+            SessionQuestion.session_id == session.id,
+            SessionQuestion.question_id == body.question_id,
+        )
+    ).scalar_one_or_none()
+
+    if in_session is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="That question is not part of this session",
+        )
+
+    already = db.execute(
+        select(Answer).where(
+            Answer.session_id == session.id,
+            Answer.question_id == body.question_id,
+        )
+    ).scalar_one_or_none()
+
+    if already is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="You have already answered this question",
+        )
+
+    limit = consume(
+        f"grading:{user.id}",
+        capacity=settings.grading_bucket_capacity,
+        refill_per_second=settings.grading_bucket_refill_per_day / 86400,
+    )
+    if not limit.allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="You have submitted too many answers. Please try again later.",
+            headers={"Retry-After": str(limit.retry_after_seconds)},
+        )
+
+    answer = Answer(
+        session_id=session.id,
+        question_id=body.question_id,
+        content=body.content,
+    )
+    db.add(answer)
+    db.flush()
+
+    job = GradingJob(answer_id=answer.id)
+    db.add(job)
+
+    answered = db.execute(
+        select(func.count()).select_from(Answer).where(Answer.session_id == session.id)
+    ).scalar_one()
+
+    if answered >= len(session.session_questions):
+        session.status = "completed"
+        session.completed_at = datetime.now(UTC)
 
     db.commit()
 
@@ -163,17 +219,6 @@ def submit_answer(
             scope,
             idempotency_key,
             result.model_dump(mode="json", by_alias=True),
-        )
-    limit = consume(
-        f"grading:{user.id}",
-        capacity=settings.grading_bucket_capacity,
-        refill_per_second=settings.grading_bucket_refill_per_day / 86400,
-    )
-    if not limit.allowed:
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="You have submitted too many answers. Please try again later.",
-            headers={"Retry-After": str(limit.retry_after_seconds)},
         )
 
     return result
