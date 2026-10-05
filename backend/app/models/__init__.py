@@ -1,3 +1,4 @@
+from app.models.grading_job import GradingJob
 from app.models.interview import (
     Answer,
     Feedback,
@@ -18,4 +19,5 @@ __all__ = [
     "Score",
     "SessionQuestion",
     "User",
+    "GradingJob",
 ]

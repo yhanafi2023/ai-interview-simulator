@@ -85,6 +85,9 @@ class Answer(Base):
     feedback: Mapped["Feedback | None"] = relationship(
         back_populates="answer", cascade="all, delete-orphan", uselist=False
     )
+    __table_args__ = (
+        UniqueConstraint("session_id", "question_id", name="uq_answer_per_question"),
+    )
 
 
 class Feedback(Base):

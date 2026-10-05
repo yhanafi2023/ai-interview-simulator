@@ -19,3 +19,6 @@ export type SubmitAnswerRequest = Schemas['SubmitAnswerRequest']
 export type Feedback = Schemas['Feedback']
 export type Score = Schemas['Score']
 export type ScoreDimension = Schemas['ScoreDimension']
+export type GradingJob = Schemas['GradingJob']
+
+
