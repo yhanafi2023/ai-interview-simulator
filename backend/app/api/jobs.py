@@ -8,12 +8,19 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from app.api.deps import CurrentUser
 from app.db.session import get_db
 from app.models import Answer, Feedback, GradingJob, InterviewSession, Score
 from app.redis_client import get_redis
 from app.schemas.interview import FeedbackOut, GradingJobOut, ScoreOut
+
+from rq import Queue
+from rq.registry import FailedJobRegistry
+
+from app.api.deps import AdminUser
+from app.queue import GRADING_QUEUE, get_rq_connection
 
 TERMINAL = {"succeeded", "failed"}
 STREAM_TIMEOUT_SECONDS = 180
@@ -121,3 +128,22 @@ def stream_job(job_id: uuid.UUID, user: CurrentUser, db: DbSession) -> Streaming
             "X-Accel-Buffering": "no",
         },
     )
+@router.get("/stats/queue")
+def queue_stats(_admin: AdminUser, db: DbSession) -> dict[str, int]:
+    connection = get_rq_connection()
+    queue = Queue(GRADING_QUEUE, connection=connection)
+
+    counts = dict(
+        db.execute(
+            select(GradingJob.status, func.count()).group_by(GradingJob.status)
+        ).all()
+    )
+
+    return {
+        "queued_in_redis": queue.count,
+        "failed_in_redis": FailedJobRegistry(queue=queue).count,
+        "db_queued": counts.get("queued", 0),
+        "db_running": counts.get("running", 0),
+        "db_succeeded": counts.get("succeeded", 0),
+        "db_failed": counts.get("failed", 0),
+    }

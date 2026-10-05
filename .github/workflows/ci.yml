@@ -28,10 +28,20 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
 
     env:
       DATABASE_URL: postgresql+psycopg://interview:interview@localhost:5432/interview
       JWT_SECRET: test-secret-not-used-anywhere-real
+      REDIS_URL: redis://localhost:6379/0
 
     steps:
       - uses: actions/checkout@v4
@@ -123,3 +133,4 @@ jobs:
           name: playwright-report
           path: frontend/playwright-report/
           retention-days: 7
+  

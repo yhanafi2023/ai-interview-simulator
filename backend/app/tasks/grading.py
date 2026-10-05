@@ -28,8 +28,8 @@ def grade_answer_task(job_id: str) -> None:
             logger.error("grading job %s not found", job_id)
             return
 
-        if job.status in {"succeeded", "failed"}:
-            logger.info("grading job %s already %s, skipping", job_id, job.status)
+        if job.status == "succeeded":
+            logger.info("grading job %s already succeeded, skipping", job_id)
             return
 
         answer = db.get(Answer, job.answer_id)

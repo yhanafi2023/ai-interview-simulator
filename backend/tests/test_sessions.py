@@ -179,3 +179,21 @@ def test_a_user_cannot_read_another_users_job(
 
     response = client.get(f"/jobs/{job_id}", headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 404
+def test_idempotency_key_replays_the_same_job(
+    client: TestClient,
+    auth_headers: dict[str, str],
+    questions: list[Question],
+    fake_queue,  # noqa: ANN001
+) -> None:
+    session = _start_session(client, auth_headers)
+    question_id = session["questions"][0]["id"]
+    headers = {**auth_headers, "Idempotency-Key": f"{session['id']}:{question_id}"}
+    payload = {"questionId": question_id, "content": "An answer worth grading once"}
+
+    first = client.post(f"/sessions/{session['id']}/answers", headers=headers, json=payload)
+    second = client.post(f"/sessions/{session['id']}/answers", headers=headers, json=payload)
+
+    assert first.status_code == 202
+    assert second.status_code == 202
+    assert first.json() == second.json()
+    assert len(fake_queue.calls) == 1

@@ -37,7 +37,9 @@ export default function InterviewRoom() {
 
   const submit = useMutation({
     mutationFn: (body: SubmitAnswerRequest) =>
-      api.post<GradingJob>(`/sessions/${sessionId}/answers`, body),
+      api.post<GradingJob>(`/sessions/${sessionId}/answers`, body, {
+        'Idempotency-Key': `${sessionId}:${body.questionId}`,
+      }),
     onSuccess: (job) => setJobId(job.id),
   })
 
