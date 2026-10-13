@@ -1,0 +1,19 @@
+# Provider binaries and module cache — downloaded, never committed
+.terraform/
+
+# State. Contains every attribute of every resource, INCLUDING SECRETS.
+*.tfstate
+*.tfstate.*
+.terraform.tfstate.lock.info
+
+# Variable files — these hold real values for real environments
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+
+# Local overrides and crash dumps
+override.tf
+override.tf.json
+*_override.tf
+crash.log
+crash.*.log
