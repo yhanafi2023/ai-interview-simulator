@@ -21,3 +21,8 @@ variable "anthropic_api_key" {
   sensitive   = true
   # No default. Terraform will error if it's missing, which is the point.
 }
+
+variable "image_tag" {
+  description = "Image tag to deploy, e.g. sha-a3f91c2. Supplied by the Makefile."
+  type        = string
+}

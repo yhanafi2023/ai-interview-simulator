@@ -1,13 +1,13 @@
 .PHONY: infra-plan infra-up infra-down infra-cost
 
 infra-plan:
-	cd infra && terraform fmt && terraform validate && terraform plan
+	cd infra && terraform fmt && terraform validate && terraform plan -var image_tag=sha-$(GIT_SHA)
 
 infra-up:
-	cd infra && terraform apply
+	cd infra && terraform apply -var image_tag=sha-$(GIT_SHA)
 
 infra-down:
-	cd infra && terraform destroy
+	cd infra && terraform destroy -var image_tag=sha-$(GIT_SHA)
 
 infra-cost:
 	@aws ce get-cost-and-usage \
