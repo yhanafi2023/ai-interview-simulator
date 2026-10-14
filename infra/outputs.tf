@@ -55,3 +55,7 @@ output "secret_arns" {
     anthropic_api_key = aws_secretsmanager_secret.anthropic_api_key.arn
   }
 }
+output "api_url" {
+  description = "Base URL of the API through the load balancer."
+  value       = "http://${aws_lb.main.dns_name}"
+}

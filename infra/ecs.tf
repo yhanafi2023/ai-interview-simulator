@@ -158,3 +158,51 @@ resource "aws_ecs_service" "worker" {
     assign_public_ip = true
   }
 }
+resource "aws_ecs_service" "api" {
+  name            = "${local.name_prefix}-api"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.api.arn
+  desired_count   = 1
+  launch_type     = "FARGATE"
+
+  enable_execute_command = true
+
+  # ── Zero-downtime rolling deployment ──
+  # min 100%: never drop below 1 healthy task (desired_count × 100%)
+  # max 200%: may temporarily run 2 tasks
+  # Together: start the new task, wait for the target group to call it
+  # healthy, drain the old one, then stop it. Never zero healthy targets.
+  deployment_minimum_healthy_percent = 100
+  deployment_maximum_percent         = 200
+
+  # Ignore health check failures for the first 60s after a task starts,
+  # so a container that takes 20s to boot isn't killed for failing probes
+  # it was never going to pass yet. Without this you get a kill loop:
+  # start, fail probes, get killed, start, fail probes, forever.
+  health_check_grace_period_seconds = 60
+
+  # Automatic rollback. If the new tasks repeatedly fail to become
+  # healthy, ECS gives up and restores the previous task definition
+  # rather than leaving the service broken.
+  deployment_circuit_breaker {
+    enable   = true
+    rollback = true
+  }
+
+  network_configuration {
+    subnets          = aws_subnet.public[*].id
+    security_groups  = [aws_security_group.ecs_tasks.id]
+    assign_public_ip = true
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.api.arn
+    container_name   = "api" # must match the name in container_definitions
+    container_port   = 8000
+  }
+
+  # The listener must exist before the service tries to register targets.
+  # Terraform can't infer this from a reference, so state it explicitly.
+  # Without it you get an intermittent, confusing creation failure.
+  depends_on = [aws_lb_listener.http]
+}
