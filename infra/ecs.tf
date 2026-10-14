@@ -38,7 +38,13 @@ locals {
     },
     # Your local Vite dev server, so you can point the real frontend at
     # this API during verification in 14.11.
-    { name = "CORS_ORIGINS", value = "http://localhost:5173,https://${aws_cloudfront_distribution.main.domain_name}" },
+        {
+      name = "CORS_ORIGINS"
+      value = jsonencode([
+        "http://localhost:5173",
+        "https://${aws_cloudfront_distribution.main.domain_name}",
+      ])
+    },
       
       # Now that viewers reach the app over HTTPS, the refresh cookie can
       # finally carry the Secure flag it was always supposed to have.
