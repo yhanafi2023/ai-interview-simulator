@@ -78,3 +78,20 @@ db-seed:
 	  --query 'tasks[0].containers[0].exitCode' --output text); \
 	echo "exit code: $$CODE"; \
 	test "$$CODE" = "0"
+.PHONY: frontend-deploy
+
+frontend-deploy:
+	cd frontend && npm run build
+	@BUCKET=$$(cd infra && terraform output -raw frontend_bucket); \
+	DIST_ID=$$(cd infra && terraform output -raw cloudfront_distribution_id); \
+	echo "--> syncing hashed assets (immutable, 1 year)"; \
+	aws s3 sync frontend/dist/ s3://$$BUCKET/ --delete \
+	  --exclude index.html \
+	  --cache-control "public,max-age=31536000,immutable"; \
+	echo "--> uploading index.html (no-cache)"; \
+	aws s3 cp frontend/dist/index.html s3://$$BUCKET/index.html \
+	  --cache-control "no-cache,must-revalidate"; \
+	echo "--> invalidating the entry point only"; \
+	aws cloudfront create-invalidation --distribution-id $$DIST_ID \
+	  --paths "/" "/index.html" > /dev/null; \
+	echo "--> live at $$(cd infra && terraform output -raw app_url)"

@@ -59,3 +59,17 @@ output "api_url" {
   description = "Base URL of the API through the load balancer."
   value       = "http://${aws_lb.main.dns_name}"
 }
+output "app_url" {
+  description = "Public HTTPS URL of the application."
+  value       = "https://${aws_cloudfront_distribution.main.domain_name}"
+}
+
+output "frontend_bucket" {
+  description = "S3 bucket holding the built frontend."
+  value       = aws_s3_bucket.frontend.bucket
+}
+
+output "cloudfront_distribution_id" {
+  description = "Distribution ID, for cache invalidations."
+  value       = aws_cloudfront_distribution.main.id
+}
