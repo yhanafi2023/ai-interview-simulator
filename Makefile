@@ -15,3 +15,23 @@ infra-cost:
 		--granularity DAILY --metrics UnblendedCost \
 		--query 'ResultsByTime[].{Date:TimePeriod.Start,Cost:Total.UnblendedCost.Amount}' \
 		--output table
+
+AWS_REGION ?= us-east-1
+GIT_SHA    := $(shell git rev-parse --short HEAD)
+
+.PHONY: ecr-login image-push
+
+ecr-login:
+	@aws ecr get-login-password --region $(AWS_REGION) \
+	 | docker login --username AWS --password-stdin \
+	   $$(cd infra && terraform output -raw ecr_repository_url | cut -d/ -f1)
+
+image-push: ecr-login
+	@if [ -n "$$(git status --porcelain)" ]; then \
+		echo "ERROR: working tree is dirty. Commit before building."; exit 1; \
+	fi
+	@REPO=$$(cd infra && terraform output -raw ecr_repository_url); \
+	docker build --platform linux/amd64 -t $$REPO:sha-$(GIT_SHA) ./backend && \
+	docker image inspect $$REPO:sha-$(GIT_SHA) --format 'arch: {{.Architecture}}' && \
+	docker push $$REPO:sha-$(GIT_SHA) && \
+	echo "pushed sha-$(GIT_SHA)"
