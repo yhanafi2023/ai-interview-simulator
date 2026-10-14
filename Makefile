@@ -1,3 +1,7 @@
+PROJECT ?= ai-interview
+ENV     ?= dev
+PREFIX  := $(PROJECT)-$(ENV)
+
 .PHONY: infra-plan infra-up infra-down infra-cost
 
 infra-plan:
@@ -35,3 +39,42 @@ image-push: ecr-login
 	docker image inspect $$REPO:sha-$(GIT_SHA) --format 'arch: {{.Architecture}}' && \
 	docker push $$REPO:sha-$(GIT_SHA) && \
 	echo "pushed sha-$(GIT_SHA)"
+
+.PHONY: db-migrate db-seed
+
+# Shared network config for one-off tasks. awsvpc means every task needs
+# to be told which subnets and security groups to use.
+define RUN_TASK_NET
+awsvpcConfiguration={subnets=[$$(cd infra && terraform output -json public_subnet_ids | jq -r 'join(",")')],securityGroups=[$$(cd infra && terraform output -json security_group_ids | jq -r .tasks)],assignPublicIp=ENABLED}
+endef
+
+db-migrate:
+	@TASK=$$(aws ecs run-task \
+	  --cluster $(PREFIX)-cluster \
+	  --task-definition $(PREFIX)-migrate \
+	  --launch-type FARGATE \
+	  --network-configuration "$(RUN_TASK_NET)" \
+	  --query 'tasks[0].taskArn' --output text); \
+	echo "migration task: $$TASK"; \
+	aws ecs wait tasks-stopped --cluster $(PREFIX)-cluster --tasks $$TASK; \
+	aws logs tail /ecs/$(PREFIX)-migrate --since 10m; \
+	CODE=$$(aws ecs describe-tasks --cluster $(PREFIX)-cluster --tasks $$TASK \
+	  --query 'tasks[0].containers[0].exitCode' --output text); \
+	echo "exit code: $$CODE"; \
+	test "$$CODE" = "0"
+
+db-seed:
+	@TASK=$$(aws ecs run-task \
+	  --cluster $(PREFIX)-cluster \
+	  --task-definition $(PREFIX)-migrate \
+	  --launch-type FARGATE \
+	  --network-configuration "$(RUN_TASK_NET)" \
+	  --overrides '{"containerOverrides":[{"name":"migrate","command":["python","-m","app.seed"]}]}' \
+	  --query 'tasks[0].taskArn' --output text); \
+	echo "seed task: $$TASK"; \
+	aws ecs wait tasks-stopped --cluster $(PREFIX)-cluster --tasks $$TASK; \
+	aws logs tail /ecs/$(PREFIX)-migrate --since 10m; \
+	CODE=$$(aws ecs describe-tasks --cluster $(PREFIX)-cluster --tasks $$TASK \
+	  --query 'tasks[0].containers[0].exitCode' --output text); \
+	echo "exit code: $$CODE"; \
+	test "$$CODE" = "0"
