@@ -26,3 +26,8 @@ variable "image_tag" {
   description = "Image tag to deploy, e.g. sha-a3f91c2. Supplied by the Makefile."
   type        = string
 }
+variable "sentry_dsn" {
+  description = "Backend Sentry DSN. Not a secret — it is write-only."
+  type        = string
+  default     = ""
+}

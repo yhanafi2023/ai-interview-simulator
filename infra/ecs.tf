@@ -31,6 +31,7 @@ locals {
     { name = "RELEASE", value = var.image_tag },
     { name = "JSON_LOGS", value = "true" },
     { name = "LOG_LEVEL", value = "INFO" },
+    { name = "SENTRY_DSN", value = var.sentry_dsn },
     {
       name  = "REDIS_URL"
       value = "redis://${aws_elasticache_cluster.main.cache_nodes[0].address}:6379/0"
