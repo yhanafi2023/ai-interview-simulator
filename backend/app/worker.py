@@ -2,12 +2,15 @@ import logging
 
 from rq import Queue, Worker
 
+from app.observability import init_sentry
 from app.queue import GRADING_QUEUE, get_rq_connection
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)-8s %(name)s | %(message)s",
 )
+
+init_sentry(include_rq=True)
 
 logger = logging.getLogger(__name__)
 

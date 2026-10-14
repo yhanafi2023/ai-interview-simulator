@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     grading_bucket_refill_per_day: int = 20
     login_bucket_capacity: int = 10
     login_bucket_refill_per_hour: int = 10
+    sentry_dsn: str = ""
+    sentry_traces_sample_rate: float = 0.1
+    release: str = "dev"
 
 
 settings = Settings()

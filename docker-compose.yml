@@ -4,6 +4,9 @@ x-backend-env: &backend-env
   JWT_SECRET: ${JWT_SECRET:-dev-only-secret-change-in-production}
   ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
   CORS_ORIGINS: '["http://localhost:5173","http://127.0.0.1:5173"]'
+  SENTRY_DSN: ${SENTRY_DSN:-}
+  ENVIRONMENT: ${ENVIRONMENT:-development}
+  RELEASE: ${RELEASE:-dev}
 
 services:
   db:

@@ -1,1 +1,52 @@
+# ─── Secrets / environment ───
+# Applies in every directory. Only *.example templates may be committed.
 .env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+credentials.json
+.aws/
+
+# ─── Terraform (see also infra/.gitignore) ───
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+
+# ─── Python ───
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
+# ─── Node / frontend ───
+node_modules/
+dist/
+dist-ssr/
+playwright-report/
+test-results/
+blob-report/
+*.local
+
+# ─── Logs, editor and OS junk ───
+*.log
+*.save
+*.swp
+*.swo
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
