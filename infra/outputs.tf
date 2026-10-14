@@ -38,3 +38,20 @@ output "redis_url" {
   description = "Redis connection URL for the ElastiCache node."
   value       = "redis://${aws_elasticache_cluster.main.cache_nodes[0].address}:6379/0"
 }
+
+output "iam_role_arns" {
+  description = "ECS role ARNs, consumed by the task definitions in 14.8."
+  value = {
+    execution = aws_iam_role.ecs_execution.arn
+    task      = aws_iam_role.ecs_task.arn
+  }
+}
+
+output "secret_arns" {
+  description = "Secret ARNs injected into containers at startup."
+  value = {
+    database_url      = aws_secretsmanager_secret.database_url.arn
+    jwt_secret        = aws_secretsmanager_secret.jwt_secret.arn
+    anthropic_api_key = aws_secretsmanager_secret.anthropic_api_key.arn
+  }
+}

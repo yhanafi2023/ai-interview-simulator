@@ -15,3 +15,9 @@ variable "environment" {
   type        = string
   default     = "dev"
 }
+variable "anthropic_api_key" {
+  description = "Anthropic API key. Supply via TF_VAR_anthropic_api_key. Never commit."
+  type        = string
+  sensitive   = true
+  # No default. Terraform will error if it's missing, which is the point.
+}
