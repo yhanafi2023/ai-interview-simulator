@@ -2,7 +2,7 @@
 
 Practice technical and behavioral interviews against an AI that scores your answers against a rubric and writes specific feedback.
 
-[![CI](https://github.com/yhanafi2023/ai-interview-simulator/actions/workflows/ci.yml/badge.svg)](https://github.com/yhanafi2023/ai-interview-simulator/actions/workflows/ci.yml)
+
 
 React · TypeScript · FastAPI · PostgreSQL · Redis · Docker · Terraform · AWS
 
